@@ -1,0 +1,15 @@
+# Keep the build context small and secrets/data out of the image
+.git
+.github
+.venv
+venv
+tests
+dataset*
+*.zip
+*.npy
+**/__pycache__
+.pytest_cache
+.ruff_cache
+Dockerfile
+.dockerignore
+README.md

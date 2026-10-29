@@ -1,0 +1,5 @@
+# Test and lint tools (CI and local only, not in the image)
+-r requirements.txt
+pytest==9.2.0
+httpx2==2.16.0
+ruff==0.17.3

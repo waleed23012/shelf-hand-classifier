@@ -1,0 +1,16 @@
+{
+  "backbone": "facebook/dinov2-base",
+  "labels": [
+    "empty",
+    "holding"
+  ],
+  "feature_dim": 768,
+  "n_images": 1003,
+  "n_videos": 29,
+  "cv": {
+    "accuracy_mean": 0.749,
+    "accuracy_std": 0.065,
+    "f1_macro_mean": 0.722
+  },
+  "source": "hand_clf_v3.pkl (Colab, GroupKFold 5 folds)"
+}
