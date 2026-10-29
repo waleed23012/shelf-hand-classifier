@@ -6,7 +6,7 @@ fastapi==0.162.0
 uvicorn==0.54.0
 python-multipart==0.0.32
 pydantic==2.13.5
-pillow==12.3.0
+pillow==13.0.0
 numpy==2.5.3
 scikit-learn==1.6.1   # must match the version hand_clf.joblib was trained with
 joblib==1.6.0
