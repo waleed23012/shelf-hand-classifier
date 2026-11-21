@@ -13,3 +13,5 @@ dataset*
 Dockerfile
 .dockerignore
 README.md
+
+data/raw/
