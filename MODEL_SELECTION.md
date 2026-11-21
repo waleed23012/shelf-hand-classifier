@@ -30,6 +30,10 @@
 
 ## Promotion rules (scripts/promote.py)
 - Minimum F1 gain: 0.02. Smaller differences are about one test image, which is noise.
+- KEPT: a candidate within 0.02 of the champion (either side) is noise, so the
+  champion stays, no files change and the check passes. Without this, code-only
+  PRs (same data, same model, same F1) would always be blocked and could never merge.
+  Only a drop of more than 0.02 is BLOCKED.
 - Latency budget: p95 of the head <= 5 ms. Laptop p95 is 0.1-0.3 ms; CI runners
   are slower, so the budget leaves a wide safety margin while still blocking a
   head that is much slower.

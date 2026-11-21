@@ -33,7 +33,16 @@ def post_image(client, data: bytes, content_type: str = JPEG, **params):
 def test_health_reports_model_loaded(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok", "model_loaded": True}
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["model_loaded"] is True
+
+
+def test_health_reports_lineage(client):
+    body = client.get("/health").json()
+    assert isinstance(body["model_version"], str) and body["model_version"]
+    assert "mlflow_run_id" in body
+    assert body["mlflow_run_id"] is None or isinstance(body["mlflow_run_id"], str)
 
 
 def test_predict_returns_documented_fields(client):

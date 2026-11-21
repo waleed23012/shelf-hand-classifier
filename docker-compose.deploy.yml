@@ -1,0 +1,10 @@
+# Local deployment of the API image.
+# Build first: docker build --build-arg GIT_SHA=$(git rev-parse HEAD) -t shelf-hand-api:local .
+services:
+  api:
+    image: shelf-hand-api:local
+    ports:
+      - "8000:8000"
+    # The local version of self-healing: Docker restarts the container if it crashes.
+    # The HEALTHCHECK lives in the Dockerfile.
+    restart: unless-stopped
