@@ -35,7 +35,9 @@ TRUSTED_TYPES = ["sklearn.neural_network._stochastic_optimizers.AdamOptimizer"]
 # Three different heads on the same frozen DINOv2 features.
 CANDIDATES = {
     "logreg": LogisticRegression(C=0.1, max_iter=3000, class_weight="balanced", random_state=SEED),
-    "svm_rbf": SVC(C=1.0, kernel="rbf", probability=True, class_weight="balanced", random_state=SEED),
+    "svm_rbf": SVC(
+        C=1.0, kernel="rbf", probability=True, class_weight="balanced", random_state=SEED
+    ),
     "mlp": MLPClassifier(hidden_layer_sizes=(256,), alpha=1e-3, max_iter=1000, random_state=SEED),
 }
 
@@ -92,7 +94,7 @@ def main() -> None:
                 "accuracy": accuracy_score(y_test, pred),
                 "auc": roc_auc_score(y_test, proba),
             }
-            for label, f1 in zip(labels, f1_score(y_test, pred, average=None)):
+            for label, f1 in zip(labels, f1_score(y_test, pred, average=None), strict=True):
                 metrics[f"f1_class_{label}"] = f1
             # Data slices: each test video is a different recording session
             slice_f1 = {}
@@ -115,11 +117,18 @@ def main() -> None:
             mlflow.log_metrics(metrics)
             mlflow.set_tags({"git_sha": git_sha(), "batch": batch})
             signature = infer_signature(X_test[:5], model.predict_proba(X_test[:5]))
-            mlflow.sklearn.log_model(model, name="model", signature=signature, input_example=X_test[:2],
-                                     skops_trusted_types=TRUSTED_TYPES)
+            mlflow.sklearn.log_model(
+                model,
+                name="model",
+                signature=signature,
+                input_example=X_test[:2],
+                skops_trusted_types=TRUSTED_TYPES,
+            )
 
-            print(f"{name:8s} f1={metrics['f1_macro']:.3f} worst_slice={metrics['f1_worst_slice']:.3f} "
-                  f"auc={metrics['auc']:.3f} p95={metrics['p95_latency_ms']:.2f}ms size={metrics['model_size_kb']:.0f}KB")
+            print(f"{name:8s} f1={metrics['f1_macro']:.3f} "
+                  f"worst_slice={metrics['f1_worst_slice']:.3f} "
+                  f"auc={metrics['auc']:.3f} p95={metrics['p95_latency_ms']:.2f}ms "
+                  f"size={metrics['model_size_kb']:.0f}KB")
 
 
 if __name__ == "__main__":

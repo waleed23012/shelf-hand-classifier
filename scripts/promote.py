@@ -33,14 +33,17 @@ LABELS = ["empty", "holding"]  # same order as LABELS in src/train/train.py
 MODELS_DIR = Path("models")
 
 LATENCY_BUDGET_MS = 5.0  # head only; laptop p95 is 0.1-0.3 ms, CI runners are slower
-MIN_F1_GAIN = 0.02       # with 68 test images, one image moves F1 by ~0.015: smaller gains are noise
+# with 68 test images, one image moves F1 by ~0.015: smaller gains are noise
+MIN_F1_GAIN = 0.02
 
 
 def batch_runs(client: MlflowClient, exp_id: str, batch: str | None):
     """Runs of one training batch (BATCH env var), or of the latest batch."""
     finished = "attributes.status = 'FINISHED'"
     if batch is None:
-        latest = client.search_runs([exp_id], finished, order_by=["attributes.start_time DESC"], max_results=1)
+        latest = client.search_runs(
+            [exp_id], finished, order_by=["attributes.start_time DESC"], max_results=1
+        )
         if not latest:
             sys.exit("BLOCKED: no finished training runs found")
         batch = latest[0].data.tags["batch"]
@@ -62,7 +65,8 @@ def main() -> None:
     print(f"batch {batch}: {len(runs)} candidates")
     for r in runs:
         m = r.data.metrics
-        print(f"  {r.info.run_name:8s} f1={m['f1_macro']:.3f} worst_slice={m['f1_worst_slice']:.3f} "
+        print(f"  {r.info.run_name:8s} f1={m['f1_macro']:.3f} "
+              f"worst_slice={m['f1_worst_slice']:.3f} "
               f"p95={m['p95_latency_ms']:.2f}ms")
 
     # Rule 1: latency budget
@@ -81,7 +85,8 @@ def main() -> None:
         print(f"champion: {champ['candidate']} f1={champ['f1_macro']:.3f}, "
               f"a new model needs f1 >= {needed:.3f}")
         if best_f1 < needed:
-            print(f"BLOCKED: best candidate {best.info.run_name} has f1={best_f1:.3f} < {needed:.3f}")
+            print(f"BLOCKED: best candidate {best.info.run_name} "
+                  f"has f1={best_f1:.3f} < {needed:.3f}")
             sys.exit(1)
     else:
         print("no champion yet: the best candidate within the budget is promoted")

@@ -52,10 +52,10 @@ def main() -> None:
     print(f"Leakage fix: moving {int(move.sum())} test images from {len(shared)} "
           f"shared videos into train: {shared}")
 
-    train_paths = train_paths + [p for p, m in zip(test_paths, move) if m]
+    train_paths = train_paths + [p for p, m in zip(test_paths, move, strict=True) if m]
     y_train = np.concatenate([y_train, y_test[move]])
     groups_train = np.concatenate([groups_train, groups_test[move]])
-    test_paths = [p for p, m in zip(test_paths, move) if not m]
+    test_paths = [p for p, m in zip(test_paths, move, strict=True) if not m]
     y_test = y_test[~move]
     groups_test = groups_test[~move]
 
