@@ -21,6 +21,8 @@ MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
 MIN_SIDE_PX = 16
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 DEFAULT_THRESHOLD = float(os.getenv("REVIEW_THRESHOLD", "0.70"))
+# Set at image build time (Dockerfile ARG GIT_SHA), so /health says which code is running.
+MODEL_VERSION = os.getenv("GIT_SHA", "dev")
 
 state: dict = {"model": None}
 
@@ -58,6 +60,8 @@ app.openapi = _openapi_with_file_picker
 class HealthResponse(BaseModel):
     status: Literal["ok"]
     model_loaded: bool
+    model_version: str
+    mlflow_run_id: str | None
 
 
 class PredictResponse(BaseModel):
@@ -70,7 +74,14 @@ class PredictResponse(BaseModel):
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(status="ok", model_loaded=state["model"] is not None)
+    model = state["model"]
+    return HealthResponse(
+        status="ok",
+        model_loaded=model is not None,
+        model_version=MODEL_VERSION,
+        # getattr: tests may put a fake model in state without this attribute.
+        mlflow_run_id=getattr(model, "mlflow_run_id", None),
+    )
 
 
 @app.post("/predict", response_model=PredictResponse)

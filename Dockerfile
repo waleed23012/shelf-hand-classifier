@@ -27,6 +27,9 @@ AutoImageProcessor.from_pretrained(b); AutoModel.from_pretrained(b); print('cach
 
 # ---------- Stage 2: runtime ----------
 FROM ${BASE_IMAGE} AS runtime
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
+LABEL org.opencontainers.image.revision=${GIT_SHA}
 
 LABEL org.opencontainers.image.title="shelf-hand-classifier" \
       org.opencontainers.image.description="DINOv2 + logistic regression: is a hand at the shelf holding a product?"

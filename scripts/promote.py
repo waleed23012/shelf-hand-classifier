@@ -2,8 +2,13 @@
 
 Rules (reasons in MODEL_SELECTION.md):
   1. The head's p95 latency must be within LATENCY_BUDGET_MS.
-  2. Its F1 must beat the current champion by at least MIN_F1_GAIN.
-Exit code 0 = PROMOTED, 1 = BLOCKED (this makes the CI check fail).
+  2. Compared with the current champion's F1:
+     - at least MIN_F1_GAIN better        -> PROMOTED
+     - within MIN_F1_GAIN either side     -> KEPT (noise: the champion stays,
+       no files are written). Code-only PRs retrain on the same data and land
+       here, so they can still merge.
+     - more than MIN_F1_GAIN worse        -> BLOCKED
+Exit code 0 = PROMOTED or KEPT, 1 = BLOCKED (this makes the CI check fail).
 
 On promotion it registers the model, moves the @champion alias to it, and
 writes what the API and the Dockerfile read:
@@ -77,17 +82,26 @@ def main() -> None:
     best = max(within, key=lambda r: r.data.metrics["f1_macro"])
     best_f1 = best.data.metrics["f1_macro"]
 
-    # Rule 2: must beat the champion by MIN_F1_GAIN
+    # Rule 2: promote only a clear gain, keep the champion within noise, block a clear loss.
+    # Without the KEPT band, a code-only PR (same data, same model, same F1) could never merge.
     champ_path = Path(args.champion)
     if champ_path.exists() and champ_path.stat().st_size > 0:
         champ = json.loads(champ_path.read_text())
         needed = champ["f1_macro"] + MIN_F1_GAIN
+        floor = champ["f1_macro"] - MIN_F1_GAIN
         print(f"champion: {champ['candidate']} f1={champ['f1_macro']:.3f}, "
               f"a new model needs f1 >= {needed:.3f}")
-        if best_f1 < needed:
+        if best_f1 < floor:
             print(f"BLOCKED: best candidate {best.info.run_name} "
-                  f"has f1={best_f1:.3f} < {needed:.3f}")
+                  f"has f1={best_f1:.3f} < {floor:.3f}")
             sys.exit(1)
+        if best_f1 < needed:
+            # Within noise of the champion: not worth swapping, not a regression either.
+            # Write nothing, so the deployed model and champion.json stay unchanged.
+            print(f"KEPT: best candidate {best.info.run_name} has f1={best_f1:.3f}, "
+                  f"within {MIN_F1_GAIN} of the champion ({champ['f1_macro']:.3f}): "
+                  f"the difference is noise, so the champion stays")
+            sys.exit(0)
     else:
         print("no champion yet: the best candidate within the budget is promoted")
 

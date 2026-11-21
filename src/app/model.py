@@ -22,10 +22,14 @@ class Prediction:
 
 
 class HandClassifier:
-    def __init__(self, classifier, embedder, labels: list[str]):
+    def __init__(self, classifier, embedder, labels: list[str],
+                 mlflow_run_id: str | None = None):
         self.classifier = classifier
         self.embedder = embedder
         self.labels = labels
+        # Lineage: which MLflow run trained this head. None for models saved
+        # before promote.py wrote it, so older hand_clf.json files still load.
+        self.mlflow_run_id = mlflow_run_id
 
     @classmethod
     def load(cls, model_path: Path = MODEL_PATH) -> "HandClassifier":
@@ -34,7 +38,7 @@ class HandClassifier:
         meta = json.loads(model_path.with_suffix(".json").read_text())
         classifier = joblib.load(model_path)
         embedder = DinoEmbedder(meta["backbone"], device="cpu")
-        return cls(classifier, embedder, meta["labels"])
+        return cls(classifier, embedder, meta["labels"], meta.get("mlflow_run_id"))
 
     def predict(self, image: Image.Image) -> Prediction:
         features = self.embedder.embed([image])
