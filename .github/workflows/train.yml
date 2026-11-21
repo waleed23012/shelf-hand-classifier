@@ -1,0 +1,74 @@
+name: Train and gate
+
+# On every pull request to main: start a fresh MLflow, train the candidates,
+# and run the promotion gate against the champion on the base branch.
+# A worse model turns this check red, and branch protection blocks the merge.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: train-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  train-and-gate:
+    name: Train and gate
+    runs-on: ubuntu-24.04
+    env:
+      MLFLOW_TRACKING_URI: http://localhost:5000
+      # Training and gate use the same BATCH, so the gate only sees this run's candidates
+      BATCH: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # we need the base branch to read its champion
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Start MLflow
+        run: docker compose -f docker-compose.mlflow.yml up -d --wait
+
+      - name: Train candidates
+        run: python -m src.train.train_mlflow
+
+      # The runner forgets everything between runs, so the champion's numbers live in Git
+      - name: Get the champion from the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if git show "origin/${BASE_REF}:models/champion.json" > base_champion.json; then
+            echo "Champion on ${BASE_REF}:"; cat base_champion.json
+          else
+            echo "No champion on ${BASE_REF} yet"; : > base_champion.json
+          fi
+
+      - name: Promotion gate
+        shell: bash
+        run: python scripts/promote.py --champion base_champion.json | tee gate.log
+
+      - name: Gate summary
+        if: always()
+        run: |
+          {
+            echo "### Promotion gate"
+            echo '```'
+            cat gate.log 2>/dev/null || echo "the gate did not run"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: MLflow logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.mlflow.yml logs --tail 50 mlflow

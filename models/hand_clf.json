@@ -5,12 +5,14 @@
     "holding"
   ],
   "feature_dim": 768,
-  "n_images": 1003,
-  "n_videos": 29,
-  "cv": {
-    "accuracy_mean": 0.749,
-    "accuracy_std": 0.065,
-    "f1_macro_mean": 0.722
-  },
-  "source": "hand_clf_v3.pkl (Colab, GroupKFold 5 folds)"
+  "candidate": "svm_rbf",
+  "mlflow_run_id": "ba0a23fe46534698b05b661fe96e1d5a",
+  "registered_model": "shelf-hand-model",
+  "model_version": "1",
+  "data_sha256": "434594dd84f2f6b22e873b8b5fd72b2f97284b035416328360b170884a18ba76",
+  "trained_at_commit": "8d1a6f84868132d61712f648b590a93aa8d9baf8",
+  "f1_macro": 0.806775956284153,
+  "f1_worst_slice": 0.6761133603238867,
+  "p95_latency_ms": 0.3262150334194303,
+  "model_size_kb": 2511.8076171875
 }
