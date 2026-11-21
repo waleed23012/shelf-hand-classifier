@@ -23,8 +23,6 @@ import numpy as np
 from mlflow.models import infer_signature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
 
 DATA = Path("data/embeddings.npz")
 EXPERIMENT = "shelf-hand"
@@ -32,13 +30,10 @@ SEED = 42
 # skops (MLflow 3's sklearn format) rejects this MLP optimizer type unless it is trusted.
 TRUSTED_TYPES = ["sklearn.neural_network._stochastic_optimizers.AdamOptimizer"]
 
-# Three different heads on the same frozen DINOv2 features.
+# One deliberately weak model (C=0.00001 regularises so strongly it barely learns),
+# to test that the promotion gate blocks it.
 CANDIDATES = {
-    "logreg": LogisticRegression(C=0.1, max_iter=3000, class_weight="balanced", random_state=SEED),
-    "svm_rbf": SVC(
-        C=1.0, kernel="rbf", probability=True, class_weight="balanced", random_state=SEED
-    ),
-    "mlp": MLPClassifier(hidden_layer_sizes=(256,), alpha=1e-3, max_iter=1000, random_state=SEED),
+    "weak": LogisticRegression(C=0.00001, max_iter=1000),
 }
 
 
